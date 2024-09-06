@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Test, console} from "../../lib/openzeppelin-contracts/lib/forge-std/src/Test.sol";
 import "./interfaces/IUniswapV2ERC20.sol";
+import { TetherToken } from "./libraries/USDT.sol";
 
 /**
  * 2024年07月06日10:39:14
@@ -35,11 +36,13 @@ contract VigalSwap {
     address public myToken;
     address public router;
     address public weth;
+    address public usdt;
 
-    constructor(address _token, address _router, address _weth) {
+    constructor(address _token, address _router, address _weth, address _usdt) {
         myToken = _token;
         router = _router;
         weth = _weth;
+        usdt = _usdt;
     }
 
     // 添加流动性，加入的是以太和Token
@@ -57,6 +60,39 @@ contract VigalSwap {
 
     }
 
+    // 测试usdt的先不测了
+    // function AddLiquidityByToken(address tokenA, 
+    // address tokenB, uint amountADesired,uint amountBDesired, uint amountAMin,uint amountBMin,
+    // address to, 
+    // uint deadline) public payable returns (uint amountA, uint amountB, uint liquidity){
+    //     // uint amountAMin = amountADesired * 97%;
+    //     // uint amountAMin = (amountADesired * 95) / 100; 
+    //     // uint amountBMin = (amountBDesired * 95) / 100; 
+    //     // 先把币转给这个合约
+    //     IERC20(tokenA).approve(router, amountADesired);
+    //     console.log("swap AddLiquidityByToken,msg.sender:", msg.sender );
+    //     IERC20(tokenA).safeTransferFrom(msg.sender, address(this),amountADesired);
+    //     console.log("tokenA balance:::", IUniswapV2ERC20(tokenA).balanceOf(address(this)));
+    //     IERC20(tokenB).approve(router, amountBDesired);
+    //     IERC20(tokenB).safeTransferFrom(msg.sender, address(this),amountBDesired);
+    //     console.log("tokenB balance:::", IUniswapV2ERC20(tokenB).balanceOf(address(this)));
+    //     console.log("transfer to swap finished.");
+    //     (amountA, amountB, liquidity) = IUniswapV2Router02(router).addLiquidity(tokenA, tokenB, 
+    //     amountADesired, amountBDesired, amountAMin, amountBMin, to, deadline);
+    // }
+
+
+    function AddLiquidityWithUSDTAndETH(uint tokenAmount, uint tokenMin, uint ethMin) 
+    public payable returns 
+    (uint amountToken, uint amountETH, uint liquidity){
+
+      return IUniswapV2Router02(router).addLiquidityETH{value: msg.value}
+      (usdt, tokenAmount, tokenMin, ethMin, msg.sender, block.timestamp);
+
+    }
+
+
+
     // 用 ETH 购买 Token
     function buyToken(uint minTokenAmount) public payable {
         address[] memory path = new address[](2);
@@ -65,31 +101,7 @@ contract VigalSwap {
 
         IUniswapV2Router01(router).swapExactETHForTokens{value : msg.value}(minTokenAmount, path, msg.sender, block.timestamp);
     }
-
-    /**
-     * function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
-        address to,
-        uint deadline
-    ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
     
-     */
-    function AddLiquidityByToken(address tokenA, 
-    address tokenB, uint amountADesired,
-    uint amountBDesired,address to, 
-    uint deadline) public payable returns (uint amountA, uint amountB, uint liquidity){
-        // uint amountAMin = amountADesired * 97%;
-        uint amountAMin = (amountADesired * 95) / 100; 
-        uint amountBMin = (amountBDesired * 95) / 100; 
-        (amountA, amountB, liquidity) = IUniswapV2Router02(router).addLiquidity(tokenA, tokenB, 
-        amountADesired, amountBDesired, amountAMin, amountBMin, to, deadline);
-    }
-
     /**
      * function removeLiquidityETH(
         address token,
@@ -101,13 +113,43 @@ contract VigalSwap {
     ) public virtual override ensure(deadline) returns (uint amountToken, uint amountETH) {
      */
 
-    function removeLiquidity(uint liquidity, uint amountToken, uint amountETH) 
+    function removeLiquidityETH(uint liquidity, uint amountToken, uint amountETH) 
     public returns (uint amountTokenBack, uint amountETHBack){
         // uint amountTokenMin = (amountToken) / 10;
         // uint amountETHMin = (amountETH) / 10;
         
         return IUniswapV2Router02(router).removeLiquidityETH(myToken, liquidity,0, 0, msg.sender, block.timestamp);
 
+    }
+
+    function removeLiquidityToken(address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline) public returns (uint amountA, uint amountB) {
+            IUniswapV2Router02(router).removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
+        }
+
+    /**
+     *  function swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+
+     */
+
+    function swapToken(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline) public returns (uint[] memory amounts) {
+            IUniswapV2Router02(router).swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
     }
 
 }

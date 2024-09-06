@@ -6,6 +6,7 @@ import { WETH9 } from "../uniswpV2/WETH9.sol";
 import { UniswapV2Factory } from "../uniswpV2/UniswapV2Factory.sol";
 import { UniswapV2Router02 } from "../uniswpV2/UniswapV2Router02.sol";
 import { VigalSwap } from "../VigalSwap.sol";
+import { TetherToken } from "../libraries/USDT.sol";
 import { UniswapV2Pair } from "../uniswpV2/UniswapV2Pair.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../interfaces/IUniswapV2Factory.sol";
@@ -35,6 +36,7 @@ contract TestSwap is Test{
     UniswapV2Factory factory;
     UniswapV2Router02 router ;
     VigalSwap swapFun;
+    TetherToken usdt;
 
     function setUp() public {
         vm.startPrank(address(1));
@@ -58,8 +60,16 @@ contract TestSwap is Test{
         // console.log("router02:");
         // console.log(address(router2));
 
-         swapFun = new VigalSwap(address(token), address(router), address(weth));
+        usdt = new TetherToken(100000000000, "Tether USD", "USDT", 6);
+        console.log("usdt:", address(usdt));
+         swapFun = new VigalSwap(address(token), address(router), address(weth), address(usdt));
         console.log("swapFun:", address(swapFun));
+        /**
+         * _totalSupply = _initialSupply;
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+         */
         vm.stopPrank();
     }
 
@@ -112,7 +122,7 @@ contract TestSwap is Test{
         console.log("testSwap amountETH:::",amountETH);
         // 找到问题所在了，burn的时候，_safeTransfer会从合约转账到to，
         // 然后还会withdraw，就是把转账然后从WETH转为eth
-        (uint amountTokenBack, uint amountETHBack) = swapFun.removeLiquidity(liquidity, amountToken, amountETH);
+        (uint amountTokenBack, uint amountETHBack) = swapFun.removeLiquidityETH(liquidity, amountToken, amountETH);
         console.log("liquidity:", liquidity);
         console.log("amountTokenBack:", amountTokenBack);
         console.log("amountETHBack:", amountETHBack);
@@ -123,17 +133,45 @@ contract TestSwap is Test{
     function test_AddLiquidity() public{
         vm.startPrank(address(1));
         vm.deal(address(1), 2 ether);
-        /**
-         *  address tokenB,
-            uint amountADesired,
-            uint amountBDesired,
-            address to,
-            uint deadline) 
-            public payable returns (uint amountA,
-            uint amountB,
-            uint liquidit
-         */
+    
         // swapFun.AddLiquidityByToken();
+        // 要转的是Mytoken=>usdt
+        //1 .提供流行性,10:1
+        uint amountADesired = 10000 * 10 **18;
+        uint amountBDesired = 1000 * 10 **6;
+        token.approve(address(swapFun), amountADesired);
+        usdt.approve(address(swapFun), amountBDesired);
+        console.log("token allowance:::",token.allowance(address(1), address(swapFun)));
+        // 开始定价，1U=10000 mytoken
+        console.log("address(1) usdt balance:",usdt.balanceOf(address(1)));
+        uint amountAMin = (amountADesired * 95) / 100; 
+        uint amountBMin = (amountBDesired * 95) / 100;
+        // (uint amountA, uint amountB, uint liquidity ) = 
+        // swapFun.AddLiquidityByToken(address(token), address(usdt), amountADesired, amountBDesired, 
+        // amountAMin, amountBMin, address(1), block.timestamp);
+        // console.log("amountA:", amountA);
+        // console.log("amountB:", amountB);
+        // console.log("liqudity:", liquidity);
+        // 提供eht-usdt
+        //  deal(address(1), 2 ether);
+        // token.approve(address(this), 8888);
+        // uint amountUDesired = 2300 * 10 ** 6;
+        // uint amountDesired = 1000 * 10 **6;
+        // uint tokenMin = (amountUDesired * 95) / 100;
+        // uint ethMin = ( 1 ether * 95) / 100;
+        // usdt.approve(address(swapFun), amountUDesired);
+        // (uint amountToken, uint amountETH, uint liqEthUsdt) 
+        // = swapFun.AddLiquidityWithUSDTAndETH{value: 1 ether}(amountUDesired, tokenMin, ethMin);
+        // console.log("amountToken:", amountToken);
+        // console.log("amountEth:", amountETH);
+        // console.log("liqEthUsdt:", liqEthUsdt);
+        // 提供eht-usdt
+        //2. 其它账户转账
+
+        //3. 其他账户增加流动性
+
+        //4. 移除流动性
+
 
     }
 

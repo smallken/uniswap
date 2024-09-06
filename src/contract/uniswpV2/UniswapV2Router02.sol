@@ -90,7 +90,8 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         console.log("tokenA:",IERC20(tokenA).allowance(msg.sender,address(this)));
         console.log("msg.sender.balance:", IERC20(tokenA).balanceOf(msg.sender));
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+        // TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+        IERC20(tokenB).transferFrom(msg.sender, pair,amountB);
         liquidity = IUniswapV2Pair(pair).mint(to);
     }
     function addLiquidityETH(
@@ -110,7 +111,7 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
             amountTokenMin,
             amountETHMin
         );
-        // 获取Pair，在addLiqudity里，如果没有pair，就会创建
+        // 拿到pair地址
         address pair = UniswapV2Library.pairFor(factory, token, WETH);
         // 转账token到pair
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
